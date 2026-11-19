@@ -1,0 +1,4 @@
+# The image only needs docker/requirements.txt: exclude everything else
+# (the code is mounted at runtime, not copied into the image)
+*
+!docker/requirements.txt
