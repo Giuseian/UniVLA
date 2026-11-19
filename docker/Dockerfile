@@ -43,14 +43,16 @@ RUN printf "torch==2.2.0\ntorchvision==0.17.0\n" > /tmp/constraints.txt && \
 RUN pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 
 # --- LIBERO simulation benchmark ---
+# Not pip-installed: recent pip's editable install does not expose the `libero`
+# package, so we add the folder to PYTHONPATH instead.
 # Answering "n" to the first-import prompt writes the default config (~/.libero/config.yaml)
-RUN git clone https://github.com/Lifelong-Robot-Learning/LIBERO.git /opt/LIBERO && \
-    pip install --no-deps -e /opt/LIBERO
+RUN git clone https://github.com/Lifelong-Robot-Learning/LIBERO.git /opt/LIBERO
+ENV PYTHONPATH=/opt/LIBERO
 RUN echo n | python -c "import libero.libero" && test -f /root/.libero/config.yaml
 
 # --- Runtime environment ---
-# PYTHONPATH: the repo (mounted at runtime) is importable without `pip install -e .`
-ENV PYTHONPATH=/workspace/univla \
+# PYTHONPATH: the repo (mounted at runtime) and LIBERO are importable without being pip-installed
+ENV PYTHONPATH=/workspace/univla:/opt/LIBERO \
     HF_HOME=/data/cache/hf \
     TORCH_HOME=/data/cache/torch \
     MUJOCO_GL=egl \
