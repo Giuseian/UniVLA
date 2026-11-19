@@ -34,10 +34,10 @@ RUN python -m pip install --upgrade pip
 # --- PyTorch 2.2.0 + CUDA 12.1 (the version used by the authors) ---
 RUN pip install torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cu121
 
-# --- Repository dependencies (the constraints file stops pip from replacing torch) ---
-COPY docker/requirements.txt /tmp/requirements.txt
-RUN printf "torch==2.2.0\ntorchvision==0.17.0\n" > /tmp/constraints.txt && \
-    pip install -r /tmp/requirements.txt -c /tmp/constraints.txt
+# --- Repository dependencies, at the exact versions in the lock file ---
+# (requirements.lock.txt is generated from requirements.txt: see docker/README.md)
+COPY docker/requirements.lock.txt /tmp/requirements.lock.txt
+RUN pip install -r /tmp/requirements.lock.txt --extra-index-url https://download.pytorch.org/whl/cu121
 
 # --- Flash Attention 2.5.5 from a prebuilt wheel (no compilation needed) ---
 RUN pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl

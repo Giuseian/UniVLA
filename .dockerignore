@@ -1,4 +1,4 @@
-# The image only needs docker/requirements.txt: exclude everything else
+# The image only needs the dependency list: exclude everything else
 # (the code is mounted at runtime, not copied into the image)
 *
-!docker/requirements.txt
+!docker/requirements.lock.txt

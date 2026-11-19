@@ -52,7 +52,7 @@ braceexpand
 # --- Pins needed for tensorflow 2.15 to work ---
 # Without these, pip installs the latest tensorflow_metadata, which needs
 # protobuf >= 5, while tensorflow 2.15 needs protobuf < 5 (ImportError: runtime_version)
-tensorflow_metadata==1.14.0
+tensorflow_metadata==1.15.0
 protobuf==3.20.3
 
 # --- LIBERO (from experiments/robot/libero/libero_requirements.txt) ---

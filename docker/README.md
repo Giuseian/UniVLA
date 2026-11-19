@@ -27,6 +27,19 @@ bash docker/launch_container.sh
 docker rm univla && bash docker/launch_container.sh
 ```
 
+## Dipendenze: `requirements.txt` e `requirements.lock.txt`
+- `requirements.txt`: la lista "umana" (cosa vogliamo). È quella da modificare.
+- `requirements.lock.txt`: le versioni **esatte** di tutti i pacchetti, generate dalla lista umana. È quella che l'immagine installa, così la build è sempre identica.
+
+Dopo aver modificato `requirements.txt`, rigenerare il lock (serve [uv](https://docs.astral.sh/uv/)):
+```bash
+printf "torch==2.2.0\ntorchvision==0.17.0\n" > /tmp/c.txt
+uv pip compile docker/requirements.txt -c /tmp/c.txt --python-version 3.10 \
+    --python-platform x86_64-manylinux_2_28 \
+    --extra-index-url https://download.pytorch.org/whl/cu121 --index-strategy unsafe-best-match \
+    --no-header -o docker/requirements.lock.txt
+```
+
 ## Variabili già impostate nell'immagine
 - `HF_HOME=/data/cache/hf`, `TORCH_HOME=/data/cache/torch`: le cache stanno nei dati, non nel container
 - `MUJOCO_GL=egl`: rendering di LIBERO senza schermo
