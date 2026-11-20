@@ -152,3 +152,6 @@ dmypy.json
 # Caches and Datasets
 cache/
 data/
+# Local copies of evaluation videos (data, not code)
+my_experiments/**/videos/
+*.mp4

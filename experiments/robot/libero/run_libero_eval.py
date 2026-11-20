@@ -60,6 +60,7 @@ class GenerateConfig:
     num_steps_wait: int = 10                         # Number of steps to wait for objects to stabilize in sim
     num_trials_per_task: int = 50                    # Number of rollouts per task
     window_size: int = 12
+    use_history: bool = True                         # [my_experiments] False = no history latent actions in the prompt (Exp 2)
 
     #################################################################################################################
     # Utils
@@ -313,7 +314,7 @@ def eval_libero(cfg: GenerateConfig) -> None:
                         observation,
                         task_description,
                         processor=processor,
-                        hist_action=prev_hist_action[-1],
+                        hist_action=prev_hist_action[-1] if cfg.use_history else '',
                     )
 
                     # Record history latent actions
