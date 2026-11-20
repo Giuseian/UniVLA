@@ -46,9 +46,11 @@ def main():
     dst_dir = os.path.join(args.data_root, args.dst, version)
     assert not os.path.exists(dst_dir), f"{dst_dir} already exists: delete it first"
 
-    shards = sorted(glob.glob(os.path.join(src_dir, f"{args.src}-train.tfrecord-*")))
-    assert shards, f"no train shards in {src_dir}"
-    print(f"[subset] source: {src_dir} ({len(shards)} shards)")
+    shards = sorted(glob.glob(os.path.join(src_dir, "*-train.tfrecord-*")))
+    assert shards, f"no train shards in {src_dir}: {os.listdir(src_dir)}"
+    # TFDS builds file names from the dataset name stored in dataset_info.json: keep the same prefix
+    prefix = os.path.basename(shards[0]).split("-train.tfrecord-")[0]
+    print(f"[subset] source: {src_dir} ({len(shards)} shards, file prefix '{prefix}')")
 
     # 1. read all episodes (raw records) and group them by task
     by_task = defaultdict(list)
@@ -70,7 +72,7 @@ def main():
 
     # 3. write them as a new TFDS dataset (1 shard is enough for a few hundred MB)
     os.makedirs(dst_dir)
-    out_name = f"{args.dst}-train.tfrecord-00000-of-00001"
+    out_name = f"{prefix}-train.tfrecord-00000-of-00001"
     with tf.io.TFRecordWriter(os.path.join(dst_dir, out_name)) as w:
         for raw in kept:
             w.write(raw)
@@ -78,7 +80,7 @@ def main():
 
     with open(os.path.join(src_dir, "dataset_info.json")) as f:
         info = json.load(f)
-    info["name"] = args.dst
+    # info["name"] is left unchanged: it must match the file prefix
     for split in info["splits"]:
         if split["name"] == "train":
             split["shardLengths"] = [str(len(kept))]
