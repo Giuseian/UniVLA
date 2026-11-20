@@ -26,8 +26,9 @@ DATA=/work/giannotti/univla
 [ -d "$DATA/datasets/libero_rlds/$DATASET" ] || { echo "[submit] dataset not found: $DATA/datasets/libero_rlds/$DATASET"; exit 1; }
 
 case "$MODE" in
-    test) PART=debug;        TIME=00:15:00;   STEPS=10;    SAVE=10;    RUN_NAME="${RUN_NAME}_test" ;;
-    full) PART=gpua-longrun; TIME=3-00:00:00; STEPS=30000; SAVE=10000 ;;
+    # QOS limits on Franklin: debug max 8 CPUs per job, gpua-long max 96
+    test) PART=debug;        TIME=00:15:00;   STEPS=10;    SAVE=10;    CPUS=8;  RUN_NAME="${RUN_NAME}_test" ;;
+    full) PART=gpua-longrun; TIME=3-00:00:00; STEPS=30000; SAVE=10000; CPUS=32 ;;
     *) echo "[submit] unknown mode '$MODE' (use test|full)"; exit 1 ;;
 esac
 
@@ -36,7 +37,7 @@ if [ -d "$DATA/runs/$RUN_NAME" ] && [ "$MODE" == "full" ]; then
 fi
 mkdir -p "$DATA/runs"
 
-sbatch --partition "$PART" --time "$TIME" --job-name "$RUN_NAME" \
+sbatch --partition "$PART" --time "$TIME" --job-name "$RUN_NAME" --cpus-per-task "$CPUS" \
     --export=ALL,MODEL="$MODEL",DATASET="$DATASET",RUN_NAME="$RUN_NAME",MAX_STEPS="$STEPS",SAVE_STEPS="$SAVE" \
     "$(dirname "$0")/finetune_libero.sbatch"
 echo "[submit] log: $DATA/runs/slurm-$RUN_NAME-<jobid>.log"
