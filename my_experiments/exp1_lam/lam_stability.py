@@ -106,7 +106,9 @@ def make_perturbations(seed):
         # task-irrelevant change between the two frames
         "frame2_brighter": lambda a, b: (a, brightness(b, 1.3)),
         "frame2_color": lambda a, b: (a, color(b)),
-        "frame2_camera_shift": lambda a, b: (a, camera_shift(b)),
+        "frame2_shift_4px": lambda a, b: (a, camera_shift(b, 4)),
+        "frame2_shift_8px": lambda a, b: (a, camera_shift(b, 8)),
+        "frame2_shift_16px": lambda a, b: (a, camera_shift(b, 16)),
     }
 
 
@@ -138,6 +140,16 @@ def encode(lam, f0, f1, bs, device):
 def agreement(a, b):
     same = (a == b)
     return {"token": same.float().mean().item() * 100, "all4": same.all(1).float().mean().item() * 100}
+
+
+def diversity(codes):
+    """How varied the codes of the clean pairs are. If one combination covers ~100% of the pairs,
+    the codes carry almost no information and their 'stability' is meaningless."""
+    combos, counts = np.unique(codes.numpy(), axis=0, return_counts=True)
+    values_per_token = [len(np.unique(codes[:, k].numpy())) for k in range(codes.shape[1])]
+    return {"distinct_combos": int(len(combos)),
+            "top_combo_share": float(counts.max() / counts.sum() * 100),
+            "distinct_values_per_token": values_per_token}
 
 
 # ----------------------------------------------------------------------------- figure
@@ -181,6 +193,7 @@ def main():
 
     rows = {}  # condition -> suite -> {"task": {...}, "unc": {...}}
     codes = {}
+    div = {}  # suite -> code diversity of the clean pairs
     for suite in args.suites:
         print(f"[exp1] === {suite}: loading {args.pairs_per_suite} frame pairs ===")
         tr = load_triplets(args.data_root, SUITES[suite], args.pairs_per_suite, args.seed)
@@ -189,6 +202,7 @@ def main():
 
         clean_t, clean_u = encode(lam, f0, f1, args.batch_size, device)
         codes[f"{suite}/clean_task"], codes[f"{suite}/clean_unc"] = clean_t.numpy(), clean_u.numpy()
+        div[suite] = {"task": diversity(clean_t), "unc": diversity(clean_u), "pairs": len(f0)}
 
         perts = make_perturbations(args.seed)
         if suite == args.suites[0]:
@@ -214,7 +228,7 @@ def main():
         }
 
     with open(os.path.join(args.out_dir, "results.json"), "w") as f:
-        json.dump({"args": vars(args), "results": rows}, f, indent=2)
+        json.dump({"args": vars(args), "diversity": div, "results": rows}, f, indent=2)
     np.savez(os.path.join(args.out_dir, "codes.npz"), **codes)
 
     lines = [
@@ -232,6 +246,19 @@ def main():
         a = r["all"]
         lines.append(f"| {name} | {a['task']['token']:.1f} | {a['task']['all4']:.1f} "
                      f"| {a['unc']['token']:.1f} | {a['unc']['all4']:.1f} |")
+    lines += [
+        "",
+        "## Code diversity (clean pairs)",
+        "",
+        "distinct = number of different 4-token combinations; top share = % of pairs with the most common one.",
+        "",
+        "| Suite | Pairs | Task-centric distinct | Task-centric top share | Task-irrelevant distinct | Task-irrelevant top share |",
+        "|---|---|---|---|---|---|",
+    ]
+    for suite in args.suites:
+        d = div[suite]
+        lines.append(f"| {suite} | {d['pairs']} | {d['task']['distinct_combos']} | {d['task']['top_combo_share']:.1f} "
+                     f"| {d['unc']['distinct_combos']} | {d['unc']['top_combo_share']:.1f} |")
     lines.append("")
     for suite in args.suites:
         lines += [f"## {suite}", "", "| Condition | Task-centric token | Task-irrelevant token |", "|---|---|---|"]
