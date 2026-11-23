@@ -18,6 +18,7 @@ set -eo pipefail
 
 SUITE=${1:?"Usage: $0 <goal|long|all> [seed]"}
 SEED=${2:-7}
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)   # absolute: run_suite does cd into the output folder
 
 MODELS=/data/models/univla-7b-224-sft-libero
 OUT=/data/eval_logs/exp2_no_history
@@ -68,4 +69,4 @@ else
     run_suite "$SUITE"
 fi
 
-bash "$(dirname "$0")/summarize_exp2.sh"
+bash "$SCRIPT_DIR/summarize_exp2.sh"
