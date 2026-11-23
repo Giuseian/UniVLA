@@ -42,6 +42,13 @@ echo "[ft] code version: $(git -C "$CODE" log --oneline -1)"
 
 type module >/dev/null 2>&1 || source /etc/profile   # make `module` available in non-login shells
 module load apptainer-1.4.1
+
+# Download DINOv2 (used by the LAM) ONCE before starting the GPU processes:
+# otherwise the 4 torchrun processes download it at the same time into the same
+# torch.hub cache folder and crash (FileExistsError / Directory not empty).
+apptainer exec --bind "$DATA":/data "$SIF" \
+    python -c "import torch; torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg'); print('[ft] DINOv2 cache OK:', torch.hub.get_dir())"
+
 apptainer exec --nv \
     --bind "$CODE":/workspace/univla,"$DATA":/data \
     --pwd /workspace/univla \
