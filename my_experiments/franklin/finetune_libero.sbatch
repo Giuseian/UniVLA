@@ -49,11 +49,17 @@ module load apptainer-1.4.1
 apptainer exec --bind "$DATA":/data "$SIF" \
     python -c "import torch; torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg'); print('[ft] DINOv2 cache OK:', torch.hub.get_dir())"
 
+# One port per job: 8-GPU nodes can host 2 jobs, and with --standalone two jobs on the
+# same node can collide on the same port ("Address already in use").
+MASTER_PORT=$(( 20000 + SLURM_JOB_ID % 20000 ))
+echo "[ft] master port: $MASTER_PORT"
+
 apptainer exec --nv \
     --bind "$CODE":/workspace/univla,"$DATA":/data \
     --pwd /workspace/univla \
     "$SIF" \
-    torchrun --standalone --nnodes 1 --nproc-per-node "$NGPU" vla-scripts/finetune_libero.py \
+    torchrun --nnodes 1 --node-rank 0 --master-addr 127.0.0.1 --master-port "$MASTER_PORT" \
+        --nproc-per-node "$NGPU" vla-scripts/finetune_libero.py \
         --vla_path /data/models/"$MODEL" \
         --lam_path /data/models/univla-latent-action-model/lam-stage-2.ckpt \
         --data_root_dir /data/datasets/libero_rlds \
