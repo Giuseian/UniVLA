@@ -24,7 +24,7 @@ ls -d "$DATA/runs/$RUN_NAME"/univla-* >/dev/null 2>&1 || { echo "[submit] no mod
 
 case "$MODE" in
     test) PART=debug; TIME=00:15:00; TRIALS=1;  OUT_NAME="${RUN_NAME}_test" ;;
-    full) PART=gpua;  TIME=12:00:00; TRIALS=50; OUT_NAME="$RUN_NAME" ;;
+    full) PART=gpua;  TIME=06:00:00; TRIALS=50; OUT_NAME="$RUN_NAME" ;;
     *) echo "[submit] unknown mode '$MODE' (use test|full)"; exit 1 ;;
 esac
 
